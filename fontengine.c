@@ -64,11 +64,15 @@ void fontengine_init(u32 shareFrameSpace, u32 fbptr)
 
 qword_t* fontengine_print_string(qword_t* q, const char* str, int* x, int* y, int z)
 {
-	PACK_GIFTAG(q, GIF_SET_TAG(1, 0, GIF_PRE_DISABLE, 0, GIF_FLG_PACKED, 2), GIF_REG_AD | (GIF_REG_AD << 4));
+	PACK_GIFTAG(q, GIF_SET_TAG(1, 0, GIF_PRE_DISABLE, 0, GIF_FLG_PACKED, 3), GIF_REG_AD | (GIF_REG_AD << 4) | (GIF_REG_AD << 8));
 	q++;
 	// TEX0 (Point to the indexed fontmap and CLUT pallette)
-	q->dw[0] = GS_SET_TEX0(font_indexed_addr / 64, 16, indexedPSM, 10, 10, 1, 1, font_pallete_addr / 64, GS_PSM_32, 0, 0, 1);
+	q->dw[0] = GS_SET_TEX0(font_indexed_addr / 64, 16, indexedPSM, 10, 10, 1, 0, font_pallete_addr / 64, GS_PSM_32, 0, 0, 1);
 	q->dw[1] = GS_REG_TEX0;
+	q++;
+	// ALPHA ((Cs - Cd)*As>>7 + Cs)
+	q->dw[0] = GS_SET_ALPHA(0,1,0,1,0);
+	q->dw[1] = GS_REG_ALPHA;
 	q++;
 	// TEX1 (Enable Bilinear)
 	q->dw[0] = GS_SET_TEX1(1, 0, 1, 1, 0, 0, 0);
@@ -91,6 +95,10 @@ qword_t* fontengine_print_string(qword_t* q, const char* str, int* x, int* y, in
 
 			i++;
 		}
+		// RGBAQ
+		q->dw[0] = GS_SET_RGBAQ(128,128,0,128,0);
+		q->dw[1] = GS_REG_RGBAQ;
+		q++;
 		u32 UVX = (str[i] % 16) * 64;
 		u32 UVY = ((str[i] / 16) - 2) * 64;
 		// UV (Offset by 0.5, might make it look better?)
@@ -113,7 +121,7 @@ qword_t* fontengine_print_string(qword_t* q, const char* str, int* x, int* y, in
 	}
 	// Set the GIFTAG here (to the pointer saved above).
 	// Newlines for example and skipped and decrease the amount in char_cnt
-	PACK_GIFTAG(char_giftag_start, GIF_SET_TAG((char_cnt - skipped_cnt), 1, GIF_PRE_ENABLE, GIF_SET_PRIM(GIF_PRIM_SPRITE, 0, 1, 0, 0, 0, 1, 0, 0), GIF_FLG_PACKED, 4),
-		GIF_REG_UV | (GIF_REG_XYZ2 << 4) | (GIF_REG_UV << 8) | (GIF_REG_XYZ2 << 12));
+	PACK_GIFTAG(char_giftag_start, GIF_SET_TAG((char_cnt - skipped_cnt), 1, GIF_PRE_ENABLE, GIF_SET_PRIM(GIF_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0), GIF_FLG_PACKED, 5),
+		GIF_REG_AD | (GIF_REG_UV << 4) | (GIF_REG_XYZ2 << 8) | (GIF_REG_UV << 12) | (GIF_REG_XYZ2 << 16));
 	return q;
 }
