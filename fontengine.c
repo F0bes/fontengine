@@ -18,8 +18,8 @@ extern unsigned char font_pallete_tex[];
 
 extern framebuffer_t g_fb;
 
-const u32 FE_WIDTH = 18;
-const u32 FE_HEIGHT = 14;
+const u32 FE_WIDTH = 22;
+const u32 FE_HEIGHT = 18;
 
 static u32 font_indexed_addr = 0;
 static u32 font_pallete_addr = 0;
@@ -62,17 +62,30 @@ void fontengine_init(u32 shareFrameSpace, u32 fbptr)
 	free(gif_packet);
 }
 
-qword_t* fontengine_print_string(qword_t* q, const char* str, int* x, int* y, int z)
+qword_t* fontengine_print_string(qword_t* q, const char* str, int x, int y, int z, u64 color)
 {
-	PACK_GIFTAG(q, GIF_SET_TAG(1, 0, GIF_PRE_DISABLE, 0, GIF_FLG_PACKED, 2), GIF_REG_AD | (GIF_REG_AD << 4));
+	return fontengine_print_string_ptr(q, str, &x, &y, z, color);
+}
+
+qword_t* fontengine_print_string_ptr(qword_t* q, const char* str, int* x, int* y, int z, u64 color)
+{
+	PACK_GIFTAG(q, GIF_SET_TAG(4, 0, GIF_PRE_DISABLE, 0, GIF_FLG_PACKED, 1), GIF_REG_AD);
 	q++;
 	// TEX0 (Point to the indexed fontmap and CLUT pallette)
-	q->dw[0] = GS_SET_TEX0(font_indexed_addr / 64, 16, indexedPSM, 10, 10, 1, 1, font_pallete_addr / 64, GS_PSM_32, 0, 0, 1);
+	q->dw[0] = GS_SET_TEX0(font_indexed_addr / 64, 16, indexedPSM, 10, 10, 1, 0, font_pallete_addr / 64, GS_PSM_32, 0, 0, 1);
 	q->dw[1] = GS_REG_TEX0;
 	q++;
 	// TEX1 (Enable Bilinear)
 	q->dw[0] = GS_SET_TEX1(1, 0, 1, 1, 0, 0, 0);
 	q->dw[1] = GS_REG_TEX1;
+	q++;
+	// RGBAQ
+	q->dw[0] = color;
+	q->dw[1] = GS_REG_RGBAQ;
+	q++;
+	// ALPHA
+	q->dw[0] = GS_SET_ALPHA(0, 1, 0, 1, 0);
+	q->dw[1] = GS_REG_ALPHA;
 	q++;
 	qword_t* char_giftag_start = q; // See note below loop
 	q++;

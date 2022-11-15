@@ -4,6 +4,7 @@
 #include <tamtypes.h>
 #include <stdlib.h>
 #include <dma.h>
+#include <gs_gp.h>
 #include <stdio.h>
 #include <sio.h>
 #include <assert.h>
@@ -29,7 +30,7 @@ void fontqueue_add_simple(char* str)
 		sio_puts("OUT OF FONTQUEUE SPACE\n");
 		return;
 	}
-	cur_qw_cnt = (fontengine_print_string(&font_queue[cur_qw_cnt], str, &simple_xaxis, &simple_yaxis, 10) - font_queue);
+	cur_qw_cnt = (fontengine_print_string_ptr(&font_queue[cur_qw_cnt], str, &simple_xaxis, &simple_yaxis, 10, GS_SET_RGBAQ(0xFF,0xFF,0xFF,0x7f,1)) - font_queue);
 }
 
 void fontqueue_reset_simple(void)
@@ -47,7 +48,7 @@ void fontqueue_add_full(char* str, int* x, int* y, int z)
 		sio_puts("OUT OF FONTQUEUE SPACE\n");
 		return;
 	}
-	cur_qw_cnt = (fontengine_print_string(&font_queue[cur_qw_cnt], str, x, y, z) - font_queue);
+	cur_qw_cnt = (fontengine_print_string_ptr(&font_queue[cur_qw_cnt], str, x, y, z, GS_SET_RGBAQ(0xFF,0xFF,0xFF,0x7f,1)) - font_queue);
 }
 
 void fontqueue_clear(void)
